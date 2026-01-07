@@ -9,10 +9,14 @@
 #######################################################################################################################################
 
 #-----[ Environment Variables ]-------------------------------------------------------------------------------------------------------#
-zbxHostname=${1:-"brspappzbx01"}
-zbxDatabase=${2:-"db_monitor"}
-zbxUser=${3:-"uzbxmonitor"}
-zbxPassword=${4:-"9TDRtVCQj5ndSJuqhUBRV9etCXX7zr"}
+# zbxHostname=${1:-"brspappzbx01"}
+# zbxDatabase=${2:-"db_monitor"}
+# zbxUser=${3:-"uzbxmonitor"}
+# zbxPassword=${4:-"9TDRtVCQj5ndSJuqhUBRV9etCXX7zr"}
+zbxHostname="brspappzbx01"
+zbxDatabase="db_monitor"
+zbxUser="uzbxmonitor"
+zbxPassword="9TDRtVCQj5ndSJuqhUBRV9etCXX7zr"
 ipLocal=$(ip -br a | awk '$1!="lo" && $3 ~ /^[0-9]/ {print $3; exit}' | cut -d/ -f1)
 zbxFileConfig="/etc/zabbix/zabbix_server.conf"
 
@@ -27,10 +31,70 @@ functionBanner() {
   echo ""
 }
 
+show_help() {
+  echo
+  echo "Uso:"
+  echo "  $0 [opções]"
+  echo
+  echo "Opções:"
+  echo "  --host       Nome do host Zabbix"
+  echo "  --db         Nome do banco de dados"
+  echo "  --user       Usuário do banco"
+  echo "  --password   Senha do banco"
+  echo "  --help       Exibe esta ajuda"
+  echo
+  echo "Exemplos:"
+  echo "  $0"
+  echo "  $0 --host serverzabbix"
+  echo "  $0 --host serverzabbix --password MinhaSenhaForte#123"
+  echo
+  exit 0
+}
+
 #-----[ Validation's ]--------------------------------------------------------------------------------------------------------------#
 if [[ ! -d /data ]]; then
   mkdir -p /data
 fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --host)
+      zbxHostname="$2"
+      shift 2
+      ;;
+    --db)
+      zbxDatabase="$2"
+      shift 2
+      ;;
+    --user)
+      zbxUser="$2"
+      shift 2
+      ;;
+    --password)
+      zbxPassword="$2"
+      shift 2
+      ;;
+    --help|-h)
+      show_help
+      ;;
+    *)
+      echo "❌ Parâmetro inválido: $1"
+      echo "Use ./$0 --help para ver as opções disponíveis."
+      exit 1
+      ;;
+  esac
+done
+
+functionBanner "Parameters used in the installation" \
+               "" \
+               "Hostname ..........: ${zbxHostname}" \
+               "Database ..........: ${zbxDatabase}" \
+               "User ..............: ${zbxUser}" \
+               "Password ..........: ${zbxPassword}" \
+               "IP Local ..........: ${ipLocal}" \
+               "" \
+               "Se está tudo correto, a instalação será iniciada em 10 segundos..."
+               sleep 10
 
 #-----[ Main Procedure ]--------------------------------------------------------------------------------------------------------------#
 functionBanner "Automated Installation of Zabbix Server 7.0" \
@@ -80,6 +144,9 @@ functionBanner "Additional PostgreSQL settings"
 
   sed -i "s/ident/md5/g" /data/zabbixdb/pg_hba.conf
   echo -e "host\t${zbxDatabase}\t${zbxUser}\t${ipLocal}/32\tmd5" >> /data/zabbixdb/pg_hba.conf
+
+  echo -e "host\t${zbxDatabase}\tzbx_monitor\t0.0.0.0/0\tmd5" >> /data/zabbixdb/pg_hba.conf
+
   sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /data/zabbixdb/postgresql.conf
   chown postgres:postgres /data/zabbixdb/*
   sudo -u postgres psql -c "SELECT pg_reload_conf();" 2>/dev/null
@@ -88,8 +155,10 @@ functionBanner "Starting the PostgreSQL service"
   systemctl enable --now postgresql-17
 
 functionBanner "Database creation: ${zbxDatabase} and user: ${zbxUser} of Zabbix"
-  sudo -u postgres psql -c "CREATE USER ${zbxUser} WITH ENCRYPTED PASSWORD '$zbxPassword'" 2>/dev/null
+  sudo -u postgres psql -c "CREATE USER ${zbxUser} SUPERUSER PASSWORD '$zbxPassword'" 2>/dev/null
   sudo -u postgres createdb -O "${zbxUser}" -E Unicode -T template0 "${zbxDatabase}" 2>/dev/null
+  
+  sudo -u postgres psql -c "CREATE USER zbx_monitor WITH ENCRYPTED PASSWORD '$zbxPassword'" 2>/dev/null
 
 functionBanner "Installing Zabbix 7 Repository"
   rpm --import https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX
@@ -226,11 +295,13 @@ functionBanner "Updating Zabbix Server host and IP in the Zabbix Database"
   psql -h "$zbxHostname" -p 5432 -d "$zbxDatabase" -U "$zbxUser" -w -c "UPDATE hosts SET host = '${zbxHostname}', name = '${zbxHostname}', name_upper = UPPER('$zbxHostname}') WHERE hostid = ${idHostZabbix};"
   psql -h"${zbxHostname}" -p5432 -d"${zbxDatabase}" -U"${zbxUser}" -w -c "UPDATE interface SET ip='"${ipLocal}"' WHERE hostid=${idHostZabbix} AND type=1;"
 
+  psql -h"${zbxHostname}" -p5432 -d"${zbxDatabase}" -U"${zbxUser}" -w -c "GRANT pg_monitor TO zbx_monitor ;" 
+
 functionBanner "Zabbix installed with timescaledb and nginx" \
                 "" \
                "Access the IP of this server in the browser with http" \
                "" \
-               "http://${ipLocal}/ ou http://${zbxHostname}/" \
+               "http://${ipLocal}/" \
                "Default Username .: Admin" \
                "Default Password .: zabbix" \
                "" \
