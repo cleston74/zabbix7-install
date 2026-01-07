@@ -9,10 +9,6 @@
 #######################################################################################################################################
 
 #-----[ Environment Variables ]-------------------------------------------------------------------------------------------------------#
-# zbxHostname=${1:-"brspappzbx01"}
-# zbxDatabase=${2:-"db_monitor"}
-# zbxUser=${3:-"uzbxmonitor"}
-# zbxPassword=${4:-"9TDRtVCQj5ndSJuqhUBRV9etCXX7zr"}
 zbxHostname="brspappzbx01"
 zbxDatabase="db_monitor"
 zbxUser="uzbxmonitor"
@@ -52,8 +48,8 @@ show_help() {
 }
 
 #-----[ Validation's ]--------------------------------------------------------------------------------------------------------------#
-if [[ ! -d /data ]]; then
-  mkdir -p /data
+if [[ ! -d /storage/postgres/data ]]; then
+  mkdir -p /storage/postgres/data
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -132,23 +128,23 @@ functionBanner "Additional PostgreSQL settings"
   mkdir -p /etc/systemd/system/postgresql-17.service.d
   touch /etc/systemd/system/postgresql-17.service.d/override.conf
   echo "[Service]" >> /etc/systemd/system/postgresql-17.service.d/override.conf
-  echo "Environment=PGDATA=/data/zabbixdb/" >> /etc/systemd/system/postgresql-17.service.d/override.conf
+  echo "Environment=PGDATA=/storage/postgres/data/" >> /etc/systemd/system/postgresql-17.service.d/override.conf
   systemctl daemon-reload
   echo "Initializing PostgreSQL Database Cluster"
-  mkdir -p /data/zabbixdb
-  chown postgres:postgres /data/zabbixdb
+  mkdir -p /storage/postgres/data
+  chown postgres:postgres /storage/postgres/data
   /usr/pgsql-17/bin/postgresql-17-setup initdb
   # Backup original pg_hba.conf e postgresql.conf
-  cp /data/zabbixdb/pg_hba.conf /data/zabbixdb/pg_hba.conf.bkp
-  cp /data/zabbixdb/postgresql.conf /data/zabbixdb/postgresql.conf.bkp
+  cp /storage/postgres/data/pg_hba.conf /storage/postgres/data/pg_hba.conf.bkp
+  cp /storage/postgres/data/postgresql.conf /storage/postgres/data/postgresql.conf.bkp
 
-  sed -i "s/ident/md5/g" /data/zabbixdb/pg_hba.conf
-  echo -e "host\t${zbxDatabase}\t${zbxUser}\t${ipLocal}/32\tmd5" >> /data/zabbixdb/pg_hba.conf
+  sed -i "s/ident/md5/g" /storage/postgres/data/pg_hba.conf
+  echo -e "host\t${zbxDatabase}\t${zbxUser}\t${ipLocal}/32\tmd5" >> /storage/postgres/data/pg_hba.conf
 
-  echo -e "host\t${zbxDatabase}\tzbx_monitor\t0.0.0.0/0\tmd5" >> /data/zabbixdb/pg_hba.conf
+  echo -e "host\t${zbxDatabase}\tzbx_monitor\t0.0.0.0/0\tmd5" >> /storage/postgres/data/pg_hba.conf
 
-  sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /data/zabbixdb/postgresql.conf
-  chown postgres:postgres /data/zabbixdb/*
+  sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /storage/postgres/data/postgresql.conf
+  chown postgres:postgres /storage/postgres/data/*
   sudo -u postgres psql -c "SELECT pg_reload_conf();" 2>/dev/null
 
 functionBanner "Starting the PostgreSQL service"
@@ -269,13 +265,13 @@ functionBanner "Stopping Zabbix Server"
   systemctl stop zabbix-server
 
 functionBanner "Additional PostgreSQL settings for TimescaleDB"
-  echo "shared_preload_libraries = 'timescaledb'" >> /data/zabbixdb/postgresql.conf
-  sudo sed -i "s/max_connections = 20/max_connections = 50/" /data/zabbixdb/postgresql.conf
-  echo "timescaledb.license=timescale" >> /data/zabbixdb/postgresql.conf
+  echo "shared_preload_libraries = 'timescaledb'" >> /storage/postgres/data/postgresql.conf
+  sudo sed -i "s/max_connections = 20/max_connections = 50/" /storage/postgres/data/postgresql.conf
+  echo "timescaledb.license=timescale" >> /storage/postgres/data/postgresql.conf
 
 functionBanner "Initializing and configuring PostgreSQL"
   sudo systemctl restart postgresql-17
-  sudo -u postgres timescaledb-tune --conf-path=/data/zabbixdb/postgresql.conf --quiet --yes --pg-config=/usr/pgsql-17/bin/pg_config
+  sudo -u postgres timescaledb-tune --conf-path=/storage/postgres/data/postgresql.conf --quiet --yes --pg-config=/usr/pgsql-17/bin/pg_config
   echo "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;" | sudo -u postgres psql "${zbxDatabase}" 2>/dev/null
   sudo systemctl restart postgresql-17
 

@@ -15,7 +15,7 @@
 >
 >Hardware mínimo
 >
->- 4 vCPUs / 4 GB Ram / 40GB HD
+>4 vCPUs / 4 GB Ram / 40GB HD
 >
 >Acesso _root_ ao Linux
 >
@@ -49,69 +49,61 @@ Acesse a pasta do projeto
 cd zabbix7-install/scripts
 ```
 
+Torne o script em executável
+
+```bash
+chmod +x install_zabbix.sh
+```
+
 ## Modo de Uso:
 
-## 🔧 Para iniciar um novo projeto de documentação, navegue até o diretório onde deseja criar o projeto e execute:
+## 🔧 O script aceita os parametros abaixo:
+
+>1. Hostname
+>2. Banco de Dados
+>3. Usuário
+>4. Senha
+>
+>Caso os parametros sejam omitidos, valores padrão serãm assumidos. Estes podem ser conferidos dentro do script.
+
+Exemplos:
+
+![Opções de Instalação](<images/zbx-01.png>)
+
+## Instalação do Zabbix Server
 
 ```bash
-mkdocs new Void_Artigos
+./install_zabbix.sh --host spappzbx01 --password s3nh4f0Rt3
 ```
 
-## Isso criará um novo diretório chamado Void_Artigos com a estrutura básica do MkDocs.
+![Opções de Instalação](<images/zbx-02.png>)
 
-## 2. Usar o Tema Material (Opcional)
+>-O tempo de instalação vai variar de acordo com a velovidade de sua internet.
 
-## 🧩 Se você criou um novo projeto, edite o arquivo de configuração mkdocs.yml dentro do diretório do projeto (Void_Artigos/mkdocs.yml) e adicione a configuração do tema Material:
+## Ao final da instalação, serão exibidos dados de acesso.
 
-```bash
-site_name: Void Artigos
-nav:
-    - Home: index.md
-    - Sobre: about.md
+![Opções de Instalação](<images/zbx-03.png>)
 
-theme:
-  name: material # Adicione esta linha para usar o tema Material
-```
+## Primeiro acesso
 
-## 3. Iniciar o Servidor de Desenvolvimento
+![Opções de Instalação](<images/zbx-04.png>)
 
-## Para visualizar sua documentação localmente enquanto a edita, navegue até o diretório do projeto e inicie o servidor de desenvolvimento:
+![Opções de Instalação](<images/zbx-05.png>)
 
-```bash
-cd void-Artigos
-```
+## O script já realiza as alterações necessárias no Banco de Dados para que o host no Zabbix tenha o nome e o ip definidos no momento da instalação.
 
-```bash
-mkdocs serve
-```
+![Opções de Instalação](<images/zbx-06.png>)
 
-## O servidor será iniciado e você poderá acessar a documentação no seu navegador, geralmente em http://127.0.0.1:8000. O MkDocs monitorará automagicamente as alterações nos seus arquivos e recarregará a página.
+## Se quiser monitorar seu PostgreSQL, edite o host e adicione o template conforme a imagem e adicione na macro a senha utilizada na instalação.
 
-## Para servir a rede interna, disponibilize o ip e a porta do Servidor
+![Opções de Instalação](<images/zbx-07.png>)
 
-```bash
-mkdocs serve 192.168.70.100:8000
-```
+![Opções de Instalação](<images/zbx-08.png>)
 
-## Sendo acessível de qualquer navegador da rede interna
+## Depois é só acompanhar as informações no _Latest data_
 
-```bash
-http://192.168.70.100:8000
-```
+![Opções de Instalação](<images/zbx-09.png>)
 
-## 4. Construir a Documentação Estática
+Esse é um projeto para caso de estudo, não deve ser utilizado em produção.
 
-## Quando sua documentação estiver pronta para ser publicada, construa os arquivos estáticos:
-
-```bash
-mkdocs build
-```
-
-## Isso criará um diretório chamado site/ contendo todos os arquivos HTML, CSS e JavaScript necessários para hospedar sua documentação em qualquer servidor web. Em resumo, o fato de estar no Void Linux não altera o fluxo de trabalho do MkDocs, graças ao uso do pipx que isola a aplicação de forma eficaz.
-
----
-
-🎯 THAT'S ALL FOLKS!
-
-👉 Contato: zerolies@disroot.org
-👉 https://t.me/z3r0l135
+Pode ser alterado e distribuido conforme necessário. Se for melhorar, faça um PR no git.
