@@ -2,6 +2,12 @@
 
 ## 📌 Visão Geral
 
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-lab%2Fstudy-blue)
+![Zabbix](https://img.shields.io/badge/Zabbix-7.x-red)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue)
+![TimescaleDB](https://img.shields.io/badge/TimescaleDB-enabled-orange)
+
 Este projeto tem como objetivo realizar a **instalação totalmente automatizada do Zabbix Server 7.x** em modo **All-in-One**, utilizando:
 
 - Zabbix Server 7.x
