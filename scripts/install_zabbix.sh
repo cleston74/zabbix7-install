@@ -101,14 +101,14 @@ functionBanner "Automated Installation of Zabbix Server 7.0" \
 
 functionBanner "Hostname definition and /etc/hosts configuration"
   hostnamectl set-hostname "${zbxHostname}"
-  echo -e "${ipLocal}\t ${zbxHostname}\t ${zbxHostname}.local.lab" >> /etc/hosts
+  echo -e "${ipLocal}\t ${zbxHostname}\t ${zbxHostname}.acme.local.lab" >> /etc/hosts
 
 functionBanner "Configuring SELinux"
   sed -i "s/SELINUX=enforcing/SELINUX=disabled/" /etc/selinux/config
   setenforce 0
 
 functionBanner "Configuring Firewall"
-  firewall-cmd --add-port={80,10051,10050}/tcp --permanent
+  firewall-cmd --add-port={80,443,10051,10050}/tcp --permanent
   firewall-cmd --add-port=162/udp --permanent
   firewall-cmd --reload
   # firewall-cmd --list-all
@@ -117,7 +117,7 @@ functionBanner "Installing English Language Pack"
   dnf install -y glibc-langpack-en
 
 functionBanner "Installing PostgreSQL Repository"
-  yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+  dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
   dnf -y module disable postgresql
 
 functionBanner "Installing PostgreSQL Server and Client"
