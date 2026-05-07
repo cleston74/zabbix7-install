@@ -9,6 +9,8 @@
 #######################################################################################################################################
 
 #-----[ Environment Variables ]-------------------------------------------------------------------------------------------------------#
+zbxVersion="7.0.15"
+zbxRelease="release1.el9"
 zbxHostname="brspappzbx01"
 zbxDatabase="db_monitor"
 zbxUser="uzbxmonitor"
@@ -89,7 +91,7 @@ functionBanner "Parameters used in the installation" \
                "Password ..........: ${zbxPassword}" \
                "IP Local ..........: ${ipLocal}" \
                "" \
-               "Se está tudo correto, a instalação será iniciada em 10 segundos..."
+               "If everything is correct, the installation will begin in 10 seconds..."
                sleep 10
 
 #-----[ Main Procedure ]--------------------------------------------------------------------------------------------------------------#
@@ -161,8 +163,10 @@ functionBanner "Installing Zabbix 7 Repository"
   rpm -Uvh https://repo.zabbix.com/zabbix/7.0/rocky/9/x86_64/zabbix-release-latest-7.0.el9.noarch.rpm
   dnf clean all
 
-functionBanner "Installing Zabbix Server Packages"
-  dnf -y install zabbix-server-pgsql zabbix-sql-scripts
+functionBanner "Installing Zabbix Server Packages ${zbxVersion}"
+  dnf -y install \
+    zabbix-server-pgsql-${zbxVersion}-${zbxRelease} \
+    zabbix-sql-scripts-${zbxVersion}-${zbxRelease}
 
 functionBanner "Configuring the database schema ${zbxDatabase}"
   zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | sudo -u postgres PGPASSWORD="$zbxPassword" psql -hlocalhost -U"$zbxUser" -d"$zbxDatabase" 2>/dev/null
@@ -185,8 +189,11 @@ functionBanner "Configuring the Zabbix Server"
 functionBanner "Starting the Zabbix service"
   systemctl enable --now zabbix-server
 
-functionBanner "Installing Zabbix Frontend Packages"
-  dnf -y install zabbix-web-pgsql zabbix-nginx-conf
+functionBanner "Installing Zabbix Frontend Packages ${zbxVersion}"
+  dnf -y install \
+    zabbix-web-${zbxVersion}-${zbxRelease} \
+    zabbix-web-pgsql-${zbxVersion}-${zbxRelease} \
+    zabbix-nginx-conf-${zbxVersion}-${zbxRelease}
 
 functionBanner "Configuring PHP"
   echo "php_value[date.timezone] = America/Sao_Paulo" >> /etc/php-fpm.d/zabbix.conf
@@ -229,8 +236,14 @@ functionBanner "Initializing the NGINX and PHP-FPM services"
   sleep 5
   systemctl enable --now nginx
 
-functionBanner "Installing Zabbix Agent 2 for monitoring the Zabbix Server"
-  dnf -y install zabbix-agent2 zabbix-agent2-plugin-postgresql
+functionBanner "Installing Zabbix Agent 2 ${zbxVersion} for monitoring the Zabbix Server"
+  dnf -y install \
+    zabbix-agent2-${zbxVersion}-${zbxRelease} \
+    zabbix-agent2-plugin-postgresql-${zbxVersion}-${zbxRelease}
+
+functionBanner "Locking Zabbix packages on version ${zbxVersion}"
+  dnf -y install 'dnf-command(versionlock)'
+  dnf versionlock add 'zabbix-*'
 
 functionBanner "Configuring the Zabbix Agent 2"
   sed -i -e "s|^Server=.*|Server=${zbxHostname}|" \
@@ -292,6 +305,10 @@ functionBanner "Updating Zabbix Server host and IP in the Zabbix Database"
   psql -h"${zbxHostname}" -p5432 -d"${zbxDatabase}" -U"${zbxUser}" -w -c "UPDATE interface SET ip='"${ipLocal}"' WHERE hostid=${idHostZabbix} AND type=1;"
 
   psql -h"${zbxHostname}" -p5432 -d"${zbxDatabase}" -U"${zbxUser}" -w -c "GRANT pg_monitor TO zbx_monitor ;" 
+
+functionBanner "Validating installed Zabbix version"
+  zabbix_server -V | head -n 1
+  rpm -qa | grep '^zabbix' | sort
 
 functionBanner "Zabbix installed with timescaledb and nginx" \
                 "" \
