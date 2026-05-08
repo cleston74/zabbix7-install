@@ -159,7 +159,7 @@ INI
   fi
 
 functionBanner "Zabbix Plugin Installation"
-  grafana-cli plugins install alexanderzobnin-zabbix-app
+  grafana cli plugins install alexanderzobnin-zabbix-app
 
 functionBanner "Set Permissions"
   chown grafana:grafana "${grafanaConfig}"
